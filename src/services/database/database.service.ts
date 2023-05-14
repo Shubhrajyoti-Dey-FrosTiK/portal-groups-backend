@@ -5,6 +5,8 @@ import mongoose, {
   Model,
   Query,
   QueryOptions,
+  SortOrder,
+  Types,
 } from "mongoose";
 
 export interface IMongoRequiredFields {
@@ -46,6 +48,7 @@ export class DatabaseService {
     queryOptions: QueryOptions = {},
     populateOptions: Array<string> = []
   ): Promise<T> {
+    // @ts-ignore
     return await model
       .findOneAndUpdate(findQuery, updateQuery, queryOptions)
       .populate(populateOptions);
@@ -65,7 +68,12 @@ export class DatabaseService {
     inputQuery: mongoose.FilterQuery<any> = {},
     fieldMap: mongoose.FilterQuery<any> = { _id: 0 },
     queryOptions: QueryOptions = {},
-    sortOptions: object = {},
+    sortOptions:
+      | string
+      | { [key: string]: SortOrder | { $meta: "textScore" } }
+      | [string, SortOrder][]
+      | null
+      | undefined,
     populateOptions: Array<string> = [],
     pageNumber: number = 1,
     pageSize: number = 100,
@@ -89,7 +97,18 @@ export class DatabaseService {
   async deleteOne<T extends Document>(
     model: Model<any>,
     inputQuery: any
-  ): Promise<T> {
+  ): Promise<T | null> {
     return await model.findOneAndDelete(inputQuery);
+  }
+
+  convertToObjectId(s: string): Types.ObjectId {
+    return new Types.ObjectId(s);
+  }
+
+  batchConvertToObjectId(sArray: string[]): Types.ObjectId[] {
+    const objIdArray: Types.ObjectId[] = [];
+    sArray.forEach((s) => objIdArray.push(this.convertToObjectId(s)));
+
+    return objIdArray;
   }
 }
